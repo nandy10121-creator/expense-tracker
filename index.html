@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expense Tracker</title>
+<style>
+  :root {
+    --bg: #000;
+    --surface: #0d0d0d;
+    --surface-2: #161616;
+    --line: #262626;
+    --text: #fff;
+    --muted: #8a8a8a;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 16px 64px; }
+  header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+  h2 { font-size: 13px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 16px; }
+  .grid { display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
+
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input, select, textarea, button { font: inherit; color: var(--text); }
+  input, select, textarea {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 8px; padding: 9px 11px; outline: none; color-scheme: dark;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #fff; }
+  textarea { resize: vertical; min-height: 64px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  form > div { margin-bottom: 12px; }
+  .btn {
+    background: #fff; color: #000; border: 0; border-radius: 8px; padding: 10px 14px;
+    font-weight: 600; cursor: pointer; width: 100%;
+  }
+  .btn:hover { background: #ddd; }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); width: auto; font-weight: 500; padding: 6px 10px; font-size: 13px; }
+  .btn.ghost:hover { border-color: #fff; }
+  .file { display: flex; align-items: center; gap: 10px; }
+  .file img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); }
+  .file input[type=file] { padding: 6px; font-size: 13px; }
+  .err { color: #ff6b6b; font-size: 12px; min-height: 16px; margin-top: 8px; }
+
+  .tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .tabs button { background: none; border: 0; padding: 7px 14px; cursor: pointer; color: var(--muted); font-size: 13px; }
+  .tabs button.on { background: #fff; color: #000; font-weight: 600; }
+  .total { font-size: 32px; font-weight: 600; letter-spacing: -.02em; }
+  .total small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+  #chart { width: 100%; height: auto; display: block; margin-top: 12px; }
+  #chart text { fill: var(--muted); font-size: 11px; }
+  .legend { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .lg { display: grid; grid-template-columns: 12px 1fr auto auto; gap: 10px; align-items: center; font-size: 14px; }
+  #pie { display: block; width: 100%; max-width: 280px; height: auto; margin: 8px auto 0; }
+  #pie text { fill: var(--text); text-anchor: middle; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .lg .pct { color: var(--muted); font-size: 12px; width: 40px; text-align: right; }
+
+  .filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filters select { width: auto; }
+  .item { display: grid; grid-template-columns: 44px 1fr auto; gap: 14px; padding: 14px 0; border-top: 1px solid var(--line); align-items: start; }
+  .item:first-child { border-top: 0; }
+  .thumb { width: 44px; height: 44px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); object-fit: cover; cursor: pointer; display: grid; place-items: center; color: var(--muted); font-size: 11px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .name { font-weight: 500; }
+  .note { color: #cfcfcf; font-size: 13px; margin-top: 2px; }
+  .amt { text-align: right; font-weight: 600; }
+  .amt button { display: block; margin: 4px 0 0 auto; background: none; border: 0; color: var(--muted); font-size: 12px; cursor: pointer; padding: 0; }
+  .amt button:hover { color: #ff6b6b; }
+  .empty { color: var(--muted); text-align: center; padding: 28px 0; }
+  .tag { display: inline-flex; align-items: center; gap: 5px; margin-right: 8px; }
+  #lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: none; place-items: center; z-index: 10; cursor: zoom-out; }
+  #lightbox.open { display: grid; }
+  #lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Expense Tracker</h1>
+    <span class="meta" id="today"></span>
+  </header>
+
+  <div class="grid">
+    <div class="stack">
+      <section class="card">
+        <h2>Add purchase</h2>
+        <form id="form" autocomplete="off">
+          <div><label for="item">What did you buy?</label><input id="item" required placeholder="e.g. Groceries"></div>
+          <div class="row">
+            <div><label for="amount">Amount (₹)</label><input id="amount" type="number" min="0" step="0.01" required placeholder="0.00"></div>
+            <div><label for="date">Date</label><input id="date" type="date" required></div>
+          </div>
+          <div>
+            <label for="category">Category</label>
+            <select id="category"></select>
+            <input id="newcat" hidden maxlength="30" placeholder="New category name" style="margin-top:8px">
+          </div>
+          <div>
+            <label for="location">Location</label>
+            <input id="location" placeholder="e.g. Reliance Fresh, Chennai">
+          </div>
+          <div><label for="notes">Notes</label><textarea id="notes" placeholder="Context: who with, why, what for…"></textarea></div>
+          <div>
+            <label for="receipt">Receipt photo (optional)</label>
+            <div class="file"><input id="receipt" type="file" accept="image/*"><img id="preview" alt="" hidden></div>
+          </div>
+          <button class="btn" type="submit">Add purchase</button>
+          <div class="err" id="err"></div>
+        </form>
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="card">
+        <h2>Analytics</h2>
+        <div class="tabs" id="tabs">
+          <button data-p="day" class="on">Daily</button>
+          <button data-p="week">Weekly</button>
+          <button data-p="month">Monthly</button>
+          <button data-p="quarter">Quarterly</button>
+        </div>
+        <div class="total"><span id="total">₹0.00</span><small id="range"></small></div>
+        <svg id="chart" viewBox="0 0 640 260" role="img" aria-label="Spending by category over time"></svg>
+        <div class="legend" id="legend"></div>
+        <h2 style="margin-top:28px">Share by category</h2>
+        <svg id="pie" viewBox="0 0 260 260" role="img" aria-label="Pie chart of spending by category"></svg>
+      </section>
+
+      <section class="card">
+        <h2>Purchases</h2>
+        <div class="filters">
+          <select id="fcat"></select>
+          <input id="fsearch" placeholder="Search item, notes, location" style="flex:1;min-width:140px">
+        </div>
+        <div id="list"></div>
+      </section>
+    </div>
+  </div>
+</div>
+<div id="lightbox"><img alt="Receipt"></div>
+
+<script>
+const BASE = {
+  "Food & Dining": "#ff7a59", "Groceries": "#7ad97a", "Transport": "#5aa9ff",
+  "Shopping": "#c58bff", "Bills & Utilities": "#ffd25a", "Entertainment": "#ff6fb5",
+  "Health": "#4de0c8", "Travel": "#ffa34d", "Other": "#9a9a9a"
+};
+const EXTRA = ["#e0b0ff", "#b5e853", "#ff9aa2", "#6fd3ff", "#f6c177", "#a0e7a0", "#ffb86b", "#d4a5ff"];
+const KEY = "ledger.purchases.v1", CKEY = "ledger.cats.v1";
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString("en-IN", { style: "currency", currency: "INR" });
+
+// built-in categories plus any the user has added
+const CATS = { ...BASE };
+function addCat(n) { if (!CATS[n]) CATS[n] = EXTRA[(Object.keys(CATS).length - Object.keys(BASE).length) % EXTRA.length]; }
+function saveCats() { try { localStorage.setItem(CKEY, JSON.stringify(Object.keys(CATS).filter(c => !(c in BASE)))); } catch (e) {} }
+try { (JSON.parse(localStorage.getItem(CKEY)) || []).forEach(addCat); } catch (e) {}
+const esc = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+let purchases = [];
+try { purchases = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) {}
+let period = "day";
+let receiptData = "";
+
+// ---- dates (all local time, as YYYY-MM-DD strings) ----
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const mondayOf = d => { const x = new Date(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// Buckets ending at today: [{key,label,from,to}] where range is [from, to] inclusive
+function buckets(p) {
+  const now = new Date(), out = [];
+  if (p === "day") {
+    for (let i = 13; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i); out.push({ from: d, to: d, label: `${MON[d.getMonth()]} ${d.getDate()}` }); }
+  } else if (p === "week") {
+    const m = mondayOf(now);
+    for (let i = 11; i >= 0; i--) { const f = new Date(m.getFullYear(), m.getMonth(), m.getDate() - 7 * i), t = new Date(f.getFullYear(), f.getMonth(), f.getDate() + 6); out.push({ from: f, to: t, label: `${MON[f.getMonth()]} ${f.getDate()}` }); }
+  } else if (p === "month") {
+    for (let i = 11; i >= 0; i--) { const f = new Date(now.getFullYear(), now.getMonth() - i, 1); out.push({ from: f, to: new Date(f.getFullYear(), f.getMonth() + 1, 0), label: `${MON[f.getMonth()]} ${String(f.getFullYear()).slice(2)}` }); }
+  } else {
+    const q0 = Math.floor(now.getMonth() / 3);
+    for (let i = 7; i >= 0; i--) { const f = new Date(now.getFullYear(), (q0 - i) * 3, 1); out.push({ from: f, to: new Date(f.getFullYear(), f.getMonth() + 3, 0), label: `Q${Math.floor(f.getMonth() / 3) + 1} ${String(f.getFullYear()).slice(2)}` }); }
+  }
+  out.forEach(b => { b.f = ymd(b.from); b.t = ymd(b.to); });
+  return out;
+}
+
+// ---- setup ----
+function init() {
+  $("today").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  $("date").value = ymd(new Date());
+  fillCats();
+  render();
+}
+
+function fillCats(selected) {
+  const opts = Object.keys(CATS).map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  $("category").innerHTML = opts + `<option value="__new">+ Add new category…</option>`;
+  if (selected) $("category").value = selected;
+  const f = $("fcat").value;
+  $("fcat").innerHTML = `<option value="">All categories</option>` + opts;
+  $("fcat").value = f;
+}
+$("category").addEventListener("change", () => {
+  const isNew = $("category").value === "__new";
+  $("newcat").hidden = !isNew;
+  if (isNew) $("newcat").focus();
+});
+
+// Downscale receipt so many photos fit in localStorage
+function shrink(file) {
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const s = Math.min(1, 900 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = () => rej(new Error("Could not read that image."));
+    img.src = url;
+  });
+}
+
+$("receipt").addEventListener("change", async e => {
+  const f = e.target.files[0];
+  receiptData = "";
+  $("preview").hidden = true;
+  if (!f) return;
+  try { receiptData = await shrink(f); $("preview").src = receiptData; $("preview").hidden = false; }
+  catch (err) { $("err").textContent = err.message; }
+});
+
+$("form").addEventListener("submit", e => {
+  e.preventDefault();
+  let cat = $("category").value;
+  if (cat === "__new") {
+    cat = $("newcat").value.trim().replace(/\s+/g, " ");
+    if (!cat) { $("err").textContent = "Enter a name for the new category."; return; }
+    cat = Object.keys(CATS).find(c => c.toLowerCase() === cat.toLowerCase()) || cat;
+  }
+  const catIsNew = !CATS[cat];
+  const p = {
+    id: Date.now() + Math.random().toString(36).slice(2, 6),
+    item: $("item").value.trim(), amount: parseFloat($("amount").value),
+    date: $("date").value, category: cat,
+    location: $("location").value.trim(), notes: $("notes").value.trim(), receipt: receiptData
+  };
+  if (!p.item || !(p.amount >= 0) || !p.date) return;
+  purchases.push(p);
+  if (!save()) { purchases.pop(); $("err").textContent = "Storage is full. Try a smaller receipt image or delete old receipts."; return; }
+  $("err").textContent = "";
+  if (catIsNew) { addCat(cat); saveCats(); }
+  e.target.reset(); receiptData = ""; $("preview").hidden = true; $("date").value = ymd(new Date());
+  $("newcat").hidden = true;
+  fillCats();
+  render();
+});
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(purchases)); return true; } catch (e) { return false; }
+}
+
+$("tabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  period = b.dataset.p;
+  [...$("tabs").children].forEach(x => x.classList.toggle("on", x === b));
+  renderChart();
+});
+$("fcat").addEventListener("change", renderList);
+$("fsearch").addEventListener("input", renderList);
+$("list").addEventListener("click", e => {
+  const del = e.target.closest("[data-del]");
+  if (del) { purchases = purchases.filter(p => p.id !== del.dataset.del); save(); render(); return; }
+  const th = e.target.closest("img[data-big]");
+  if (th) { $("lightbox").querySelector("img").src = th.src; $("lightbox").classList.add("open"); }
+});
+$("lightbox").addEventListener("click", () => $("lightbox").classList.remove("open"));
+
+// ---- render ----
+function render() { renderChart(); renderList(); }
+
+function renderChart() {
+  const bs = buckets(period);
+  const first = bs[0].f, last = bs[bs.length - 1].t;
+  const inRange = purchases.filter(p => p.date >= first && p.date <= last);
+  const data = bs.map(b => {
+    const by = {}; let sum = 0;
+    inRange.forEach(p => { if (p.date >= b.f && p.date <= b.t) { by[p.category] = (by[p.category] || 0) + p.amount; sum += p.amount; } });
+    return { b, by, sum };
+  });
+  const total = inRange.reduce((s, p) => s + p.amount, 0);
+  $("total").textContent = fmt(total);
+  $("range").textContent = `${bs[0].label} – ${bs[bs.length - 1].label}`;
+
+  // stacked bars
+  const W = 640, H = 260, L = 44, B = 28, T = 10, R = 6;
+  const max = niceMax(Math.max(...data.map(d => d.sum), 0));
+  const bw = (W - L - R) / data.length;
+  let svg = "";
+  for (let i = 0; i <= 4; i++) {
+    const y = T + (H - T - B) * (1 - i / 4);
+    svg += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#262626"/><text x="${L - 6}" y="${y + 4}" text-anchor="end">${shortMoney(max * i / 4)}</text>`;
+  }
+  const every = data.length > 12 ? 2 : 1;
+  data.forEach((d, i) => {
+    const x = L + i * bw + bw * 0.18, w = bw * 0.64;
+    let y = H - B;
+    const tip = `${d.b.label}: ${fmt(d.sum)}` + Object.entries(d.by).map(([c, v]) => `\n${c}: ${fmt(v)}`).join("");
+    svg += `<g><title>${esc(tip)}</title><rect x="${L + i * bw}" y="${T}" width="${bw}" height="${H - T - B}" fill="transparent"/>`;
+    Object.keys(CATS).forEach(c => {
+      if (!d.by[c]) return;
+      const h = d.by[c] / max * (H - T - B);
+      y -= h;
+      svg += `<rect x="${x}" y="${y}" width="${w}" height="${Math.max(h - 1, 0.5)}" rx="1.5" fill="${CATS[c]}"/>`;
+    });
+    svg += `</g>`;
+    if (i % every === (data.length - 1) % every) svg += `<text x="${x + w / 2}" y="${H - 9}" text-anchor="middle">${d.b.label}</text>`;
+  });
+  $("chart").innerHTML = svg;
+
+  // category breakdown
+  const tot = {};
+  inRange.forEach(p => tot[p.category] = (tot[p.category] || 0) + p.amount);
+  const rows = Object.entries(tot).sort((a, b) => b[1] - a[1]);
+  $("legend").innerHTML = rows.length ? rows.map(([c, v]) =>
+    `<div class="lg"><span class="dot" style="background:${CATS[c]}"></span><span>${esc(c)}</span><span>${fmt(v)}</span><span class="pct">${total ? Math.round(v / total * 100) : 0}%</span></div>`).join("")
+    : `<div class="empty">No spending in this period yet.</div>`;
+  renderPie(rows, total);
+}
+
+// donut chart of the same category totals shown in the legend
+function renderPie(rows, total) {
+  const cx = 130, cy = 130, r = 120, ri = 70;
+  const pt = (rad, a) => `${(cx + rad * Math.sin(a)).toFixed(2)} ${(cy - rad * Math.cos(a)).toFixed(2)}`;
+  let svg = "";
+  if (!total) {
+    svg = `<circle cx="${cx}" cy="${cy}" r="${(r + ri) / 2}" fill="none" stroke="#262626" stroke-width="${r - ri}"/><text x="${cx}" y="${cy + 5}" style="fill:var(--muted);font-size:13px">No data</text>`;
+  } else {
+    let a0 = 0;
+    rows.forEach(([c, v]) => {
+      const frac = v / total, a1 = a0 + frac * Math.PI * 2;
+      const tip = `<title>${esc(c)}: ${fmt(v)} (${(frac * 100).toFixed(1)}%)</title>`;
+      if (rows.length === 1) {
+        svg += `<circle cx="${cx}" cy="${cy}" r="${(r + ri) / 2}" fill="none" stroke="${CATS[c]}" stroke-width="${r - ri}">${tip}</circle>`;
+      } else {
+        const big = frac > 0.5 ? 1 : 0;
+        svg += `<path d="M ${pt(r, a0)} A ${r} ${r} 0 ${big} 1 ${pt(r, a1)} L ${pt(ri, a1)} A ${ri} ${ri} 0 ${big} 0 ${pt(ri, a0)} Z" fill="${CATS[c]}" stroke="#0d0d0d" stroke-width="2">${tip}</path>`;
+      }
+      a0 = a1;
+    });
+    svg += `<text x="${cx}" y="${cy - 2}" style="font-size:11px;fill:var(--muted)">Total</text><text x="${cx}" y="${cy + 18}" style="font-size:16px;font-weight:600">${fmt(total)}</text>`;
+  }
+  $("pie").innerHTML = svg;
+}
+
+function niceMax(v) {
+  if (v <= 0) return 100;
+  const p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+}
+const shortMoney = v => v >= 100000 ? `₹${+(v / 100000).toFixed(1)}L` : v >= 1000 ? `₹${+(v / 1000).toFixed(1)}k` : `₹${Math.round(v)}`;
+
+function renderList() {
+  const cat = $("fcat").value, q = $("fsearch").value.trim().toLowerCase();
+  const list = purchases
+    .filter(p => (!cat || p.category === cat) && (!q || `${p.item} ${p.notes} ${p.location}`.toLowerCase().includes(q)))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  $("list").innerHTML = list.length ? list.map(p => `
+    <div class="item">
+      ${p.receipt ? `<img class="thumb" data-big src="${p.receipt}" alt="Receipt for ${esc(p.item)}">` : `<div class="thumb">—</div>`}
+      <div>
+        <div class="name">${esc(p.item)}</div>
+        <div class="meta"><span class="tag"><span class="dot" style="background:${CATS[p.category]}"></span>${esc(p.category)}</span>${parse(p.date).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}${p.location ? " · " + esc(p.location) : ""}</div>
+        ${p.notes ? `<div class="note">${esc(p.notes)}</div>` : ""}
+      </div>
+      <div class="amt">${fmt(p.amount)}<button data-del="${p.id}">Delete</button></div>
+    </div>`).join("") : `<div class="empty">${purchases.length ? "No matches." : "No purchases yet. Add your first one."}</div>`;
+}
+
+
+init();
+</script>
+</body>
+</html>
